@@ -1,0 +1,5 @@
+import axios from 'axios';
+const api=axios.create({baseURL:import.meta.env.VITE_API_URL||'http://localhost:5000/api'});
+api.interceptors.request.use(c=>{const token=localStorage.getItem('token');if(token)c.headers.Authorization=`Bearer ${token}`;return c;});
+export const imageUrl=name=>name?`${import.meta.env.VITE_SERVER_URL||'http://localhost:5000'}/uploads/${name}`:'';
+export default api;

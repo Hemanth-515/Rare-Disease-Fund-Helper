@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import Doctor from '../models/Doctor.js';
+import { authenticate, allow } from '../middleware/auth.js';
+import { signToken, safeDoctor } from '../utils.js';
+const router=Router();
+router.post('/login',async(req,res)=>{const {email,password}=req.body;if(!process.env.ADMIN_EMAIL||email?.toLowerCase()!==process.env.ADMIN_EMAIL.toLowerCase()||password!==process.env.ADMIN_PASSWORD)return res.status(401).json({message:'Invalid admin credentials.'});const admin={_id:'admin',name:'Admin'};res.json({token:signToken(admin,'ADMIN'),role:'ADMIN',user:{name:'Admin',email}});});
+router.get('/doctors/pending',authenticate,allow('ADMIN'),async(_req,res,next)=>{try{res.json(await Doctor.find({verificationStatus:'Pending'}).select('-passwordHash'));}catch(e){next(e);}});
+router.put('/doctors/:id/:decision',authenticate,allow('ADMIN'),async(req,res,next)=>{try{if(!['verify','reject'].includes(req.params.decision))return res.status(400).json({message:'Invalid decision.'});const doctor=await Doctor.findByIdAndUpdate(req.params.id,{verificationStatus:req.params.decision==='verify'?'Verified':'Rejected'},{new:true});if(!doctor)return res.status(404).json({message:'Doctor not found.'});res.json({user:safeDoctor(doctor)});}catch(e){next(e);}});
+export default router;
